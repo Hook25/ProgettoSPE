@@ -1,16 +1,17 @@
 from heapq import heappush, heappop
 from events import *
 
-SIMULATION_END = 5 * 60 * 1000 #1 minute
+SIMULATION_END = 10 * 60 * 1000 #1 minute
 
 def identity(x): return x
 
-simulation_parameters = {
-  "off_duration" : 0,
-  "recv_duration": 400,
+simul_params = {
+  "off_duration" : 300,
+  "recv_duration": 100,
   "send_duration": 400,
-  "off_dist" : identity, 
-  "send_delay" : 300
+  "off_dist"     : identity, 
+  "send_delay"   : 300, 
+  "send_spacing" : 20
 }
 
 class Node:
@@ -29,11 +30,13 @@ class Node:
       ((self.position[0] - other.position[0]) ** 2) +
       ((self.position[1] - other.position[1]) ** 2)) ** .5
   def get_recv_duration():
-    return simulation_parameters["recv_duration"]
+    return simul_params["recv_duration"]
   def get_off_duration():
-    return simulation_parameters["off_duration"]
+    return simul_params["off_duration"]
   def get_send_duration():
-    return simulation_parameters["send_duration"]
+    return simul_params["send_duration"]
+  def get_send_spacing():
+    return simul_params["send_spacing"]
 
 class Environment:
   def __init__(self, nodes):
