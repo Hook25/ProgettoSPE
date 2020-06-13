@@ -3,13 +3,6 @@ from environment import Node
 
 def identitiy(x): return x
 
-STARTUP_DELAY = 0, 400
-STARTUP_DISTRIBUTION = np.random.uniform
-SEND_DELAY = 20 #ms
-SEND_DELAY_DISTRIBUTION = identitiy
-RECV_DELAY = 400 #ms
-RECV_DELAY_DISTRIBUTION = identitiy
-
 class Event:
   _kind = "Event"
   def __init__(self, id, ts, master):
@@ -33,17 +26,24 @@ class Event:
 
 class LeaveCarrierEvent(Event):
   _kind = "LeaveCarrierEvent"
+  def __init__(self, id, ts, master, collided):
+    super().__init__(id, ts, master)
+    self.collided = collided
   def run(self):
+    self.master.cf(self)
+    if self.collided: return
     for node in self.master.nodes:
       if node.mode == Node.MODE_RECV:
         node.discover(self)
   def dst_get_value(self):
-    return 0
+    return Node.get_prop_time()
 
 class SendEvent(Event):
   _kind = "SendEvent"
   def run(self):
-    LeaveCarrierEvent(self.id, self.ts, self.master).new_from_now().plan()
+    self.master.co(self)
+    collided = not self.master.is_cf()
+    LeaveCarrierEvent(self.id, self.ts, self.master, collided).new_from_now().plan()
   def dst_get_value(self):
     return Node.get_send_spacing()
 
@@ -83,7 +83,7 @@ class ModeSendEvent(Event):
 class StartEvent(Event):
   _kind = "StartEvent"
   def dst_get_value(self):
-    return STARTUP_DISTRIBUTION(*STARTUP_DELAY)
+    return Node.get_startup_time()
   def run(self):
     ModeSendEvent(self.id, self.ts, self.master).plan() 
 

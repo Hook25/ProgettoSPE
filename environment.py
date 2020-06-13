@@ -1,17 +1,21 @@
 from heapq import heappush, heappop
 from events import *
+import numpy as np
 
-SIMULATION_END = 10 * 60 * 1000 #1 minute
+SIMULATION_END = 1 * 60 * 1000 
 
 def identity(x): return x
 
+#refactor
 simul_params = {
-  "off_duration" : 300,
-  "recv_duration": 100,
-  "send_duration": 400,
-  "off_dist"     : identity, 
-  "send_delay"   : 300, 
-  "send_spacing" : 20
+  "off_duration"     : 000,
+  "recv_duration"    : 400,
+  "send_duration"    : 400,
+  "off_dist"         : identity, 
+  "send_spacing"     : 2,
+  "propagation_time" : 0.00013,
+  "startup_dist"     : np.random.uniform,
+  "startup_delay"    : (0, 20)
 }
 
 class Node:
@@ -37,6 +41,10 @@ class Node:
     return simul_params["send_duration"]
   def get_send_spacing():
     return simul_params["send_spacing"]
+  def get_prop_time():
+    return simul_params["propagation_time"]
+  def get_startup_time():
+    return simul_params["startup_dist"](*simul_params["startup_delay"])
 
 class Environment:
   def __init__(self, nodes):
@@ -47,14 +55,16 @@ class Environment:
     for node in nodes:
       StartEvent(node.id, 0, self).new_from_now().plan()
     self.push(EndEvent(-1, SIMULATION_END, self))
-  def ca(self, message):
-    self.ism -= 1
   def push(self, message):
     heappush(self.evt_queue, message)
   def pop(self):
     return heappop(self.evt_queue)
   def co(self, message):
     self.ism += 1
+  def cf(self, message):
+    self.ism -= 1
+  def is_cf(self):
+    return self.ism > 0
   def simulate(self):
     last_evt = self.pop()
     while self.evt_queue and not last_evt.same_kind(EndEvent):
