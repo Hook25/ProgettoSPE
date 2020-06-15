@@ -1,6 +1,7 @@
 from environment import Environment, Node
 from simul_params import Param, SimulParamsManager, identity
 import numpy as np
+from multiprocessing import Pool
 
 def build_network(size):
   return [Node(i, (i,i)) for i in range(size)]
@@ -33,7 +34,9 @@ def calc_avg_disc(env):
   return avg(disc)
 
 def main():
-  envs = [simulate(5) for _ in range(40)]
+  p = Pool()
+  sizes = [5 for _ in range(40)]
+  envs = p.map(simulate, sizes)
   disc = (avg([calc_avg_disc(env) for env in envs]) - 1) / 4
   print(disc)
 
