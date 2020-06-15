@@ -1,7 +1,4 @@
 import numpy as np
-from environment import Node
-
-def identitiy(x): return x
 
 class Event:
   _kind = "Event"
@@ -33,36 +30,39 @@ class LeaveCarrierEvent(Event):
     self.master.cf(self)
     if self.collided: return
     for node in self.master.nodes:
-      if node.mode == Node.MODE_RECV:
+      if node.mode == node.MODE_RECV:
         node.discover(self)
   def dst_get_value(self):
-    return Node.get_prop_time()
+    return self.master.get_param("prop_time")
 
 class SendEvent(Event):
   _kind = "SendEvent"
   def run(self):
     self.master.co(self)
     collided = not self.master.is_cf()
-    LeaveCarrierEvent(self.id, self.ts, self.master, collided).new_from_now().plan()
+    LeaveCarrierEvent(
+      self.id, self.ts, self.master, collided).new_from_now().plan()
   def dst_get_value(self):
-    return Node.get_send_spacing()
+    return self.master.get_param("send_spacing")
 
 class ModeOffEvent(Event):
   _kind = "ModeOffEvent"
   def dst_get_value(self):
     """off is after recv, so running it terminates the former"""
-    return Node.get_recv_duration()
+    return self.master.get_param("recv_duration")
   def run(self):
-    self.master.nodes[self.id].mode = Node.MODE_OFF
+    node = self.master.nodes[self.id]
+    node.mode = node.MODE_OFF
     ModeSendEvent(self.id, self.ts, self.master).new_from_now().plan()
 
 class ModeRecvEvent(Event):
   _kind = "ModeRecvEvent"
   def dst_get_value(self):
     """recv is after send, so scheduling it will terminate the former"""
-    return Node.get_send_duration()
+    return self.master.get_param("send_duration")
   def run(self):
-    self.master.nodes[self.id].mode = Node.MODE_RECV
+    node = self.master.nodes[self.id]
+    node.mode = node.MODE_RECV
     ModeOffEvent(self.id, self.ts, self.master).new_from_now().plan()
 
 class ModeSendEvent(Event):
@@ -70,7 +70,8 @@ class ModeSendEvent(Event):
   def run(self):
     mode_switch_evt = ModeRecvEvent(
       self.id, self.ts, self.master).new_from_now().plan()
-    self.master.nodes[self.id].mode = Node.MODE_SEND
+    node = self.master.nodes[self.id]
+    node.mode = node.MODE_SEND
     next_send = SendEvent(self.id, self.ts, self.master).new_from_now()
     limit_ts = mode_switch_evt.ts
     while(next_send.ts < limit_ts):
@@ -78,12 +79,12 @@ class ModeSendEvent(Event):
       next_send = SendEvent(
         self.id, next_send.ts, self.master).new_from_now()
   def dst_get_value(self):
-    return Node.get_off_duration() 
+    return self.master.get_param("off_duration")
 
 class StartEvent(Event):
   _kind = "StartEvent"
   def dst_get_value(self):
-    return Node.get_startup_time()
+    return self.master.get_param("startup_time")
   def run(self):
     ModeSendEvent(self.id, self.ts, self.master).plan() 
 

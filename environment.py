@@ -4,20 +4,6 @@ import numpy as np
 
 SIMULATION_END = 1 * 60 * 1000 
 
-def identity(x): return x
-
-#refactor
-simul_params = {
-  "off_duration"     : 000,
-  "recv_duration"    : 400,
-  "send_duration"    : 400,
-  "off_dist"         : identity, 
-  "send_spacing"     : 2,
-  "propagation_time" : 0.00013,
-  "startup_dist"     : np.random.uniform,
-  "startup_delay"    : (0, 20)
-}
-
 class Node:
   MODE_SEND = "Mode send"
   MODE_RECV = "Mode receive"
@@ -33,22 +19,11 @@ class Node:
     return (
       ((self.position[0] - other.position[0]) ** 2) +
       ((self.position[1] - other.position[1]) ** 2)) ** .5
-  def get_recv_duration():
-    return simul_params["recv_duration"]
-  def get_off_duration():
-    return simul_params["off_duration"]
-  def get_send_duration():
-    return simul_params["send_duration"]
-  def get_send_spacing():
-    return simul_params["send_spacing"]
-  def get_prop_time():
-    return simul_params["propagation_time"]
-  def get_startup_time():
-    return simul_params["startup_dist"](*simul_params["startup_delay"])
 
 class Environment:
-  def __init__(self, nodes):
+  def __init__(self, nodes, params):
     self.time = 0
+    self.params = params
     self.nodes = nodes
     self.evt_queue = []
     self.ism = 0 #in system messages
@@ -70,7 +45,10 @@ class Environment:
     while self.evt_queue and not last_evt.same_kind(EndEvent):
       last_evt.run()
       last_evt = self.pop()
-
+  def get_param(self, name):
+    return self.params.get_value(name)
+  def evolve(self, name):
+    self.params.evolve(name)
 
 def main():
   nodes = [Node(i, (i,i)) for i in range(10)]
