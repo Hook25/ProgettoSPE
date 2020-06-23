@@ -28,7 +28,8 @@ class LeaveCarrierEvent(Event):
     self.collided = collided
   def run(self):
     self.master.cf(self)
-    if self.collided: return
+    if not self.master.is_cf() or self.collided:
+      return
     for node in self.master.nodes:
       if node.mode == node.MODE_RECV:
         node.discover(self)
@@ -38,8 +39,8 @@ class LeaveCarrierEvent(Event):
 class SendEvent(Event):
   _kind = "SendEvent"
   def run(self):
-    self.master.co(self)
     collided = not self.master.is_cf()
+    self.master.co(self)
     LeaveCarrierEvent(
       self.id, self.ts, self.master, collided).new_from_now().plan()
   def dst_get_value(self):
@@ -84,7 +85,9 @@ class ModeSendEvent(Event):
 class StartEvent(Event):
   _kind = "StartEvent"
   def dst_get_value(self):
-    return self.master.get_param("startup_time")
+    val = self.master.get_param("startup_time")
+    #print(val)
+    return val
   def run(self):
     ModeSendEvent(self.id, self.ts, self.master).plan() 
 

@@ -2,7 +2,7 @@ from heapq import heappush, heappop
 from events import *
 import numpy as np
 
-SIMULATION_END = 1 * 60 * 1000 
+SIMULATION_END = 10 * 60 * 1000 
 
 class Node:
   MODE_SEND = "Mode send"
@@ -39,7 +39,7 @@ class Environment:
   def cf(self, message):
     self.ism -= 1
   def is_cf(self):
-    return self.ism > 0
+    return self.ism == 0
   def simulate(self):
     last_evt = self.pop()
     while self.evt_queue and not last_evt.same_kind(EndEvent):
