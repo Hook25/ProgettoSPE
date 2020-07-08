@@ -2,7 +2,7 @@ from heapq import heappush, heappop
 from events import *
 import numpy as np
 
-SIMULATION_END = 10 * 60 * 1000 
+SIMULATION_END = 1 * 60 * 1000 
 
 class Node:
   MODE_SEND = "Mode send"
