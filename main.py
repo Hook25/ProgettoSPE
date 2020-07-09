@@ -3,6 +3,7 @@ from simul_params import Param, SimulParamsManager, identity
 import numpy as np
 from multiprocessing import Pool
 from collections import defaultdict
+from matplotlib import pyplot as plt
 
 def build_network(size):
   return [Node(i, (i,i)) for i in range(size)]
@@ -58,6 +59,23 @@ def recv_off_domain(params, domain):
     for x_dom in range(*domain)
     for size, param_l in params
   ]
+
+def save_data_to_csv(data):
+  #Saving data to a csv file
+  data_file = open('data.csv','a')
+  for norm_rdc, cumul, etq, disc_norm in data: 
+    print(norm_rdc, cumul, etq, disc_norm)
+    data_file.write(str(norm_rdc))
+    data_file.write(",")
+    data_file.write(str(cumul))
+    data_file.write(",")
+    data_file.write(str(etq[0]))
+    data_file.write(",")
+    data_file.write(str(etq[1]))
+    data_file.write(",")
+    data_file.write(str(disc_norm))
+    data_file.write("\n")
+  data_file.close()
   
 
 def main():
@@ -78,8 +96,9 @@ def main():
     results[(env.get_param("send_spacing"), env.get_param("recv_duration"))].append(env)
     if i % 1000 == 0:
       print("{}/{}".format(i, len(params)))
-  from matplotlib import pyplot as plt
+
   to_draw = []
+
   for etq, envs in results.items():
     avg_disc = avg([calc_avg_disc(env) for env in envs])
     norm_rdc = avg([calc_norm_radio_dc(env) for env in envs])
@@ -89,10 +108,9 @@ def main():
   to_draw.sort(key=lambda x: x[1])
   to_draw.reverse()
   to_draw = to_draw[:50]
-  for norm_rdc, cumul, etq, disc_norm in to_draw:
-    plt.bar(norm_rdc, cumul) 
-    print(norm_rdc, cumul, etq, disc_norm)
-  plt.show()
+  
+  save_data_to_csv(to_draw)
+
 
 
 if __name__ == "__main__":
