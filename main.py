@@ -86,10 +86,10 @@ def main():
     Param("prop_time", identity, (0.00013, )),
     Param("startup_time", np.random.RandomState(seed).uniform, (0,400))
     ]) 
-    for seed in range(30)
+    for seed in range(30) #numero simulazioni
   ]
-  params = send_spacing_domain(const_params, (1, 200, 10))
-  params = recv_off_domain(params, (50, 300, 20))
+  params = send_spacing_domain(const_params, (1, 200, 10)) #crea per ogni parametro una simulazione
+  params = recv_off_domain(params, (50, 300, 20)) 
   print("To do: ", len(params))
   results = defaultdict(list)
   for i, env in enumerate(p.imap_unordered(simulate, params)):
@@ -100,10 +100,10 @@ def main():
   to_draw = []
 
   for etq, envs in results.items():
-    avg_disc = avg([calc_avg_disc(env) for env in envs])
-    norm_rdc = avg([calc_norm_radio_dc(env) for env in envs])
-    norm_disc = (avg_disc - 1) / (size - 1)
-    cumul = norm_disc / norm_rdc
+    avg_disc = avg([calc_avg_disc(env) for env in envs]) #average discovery rate
+    norm_rdc = avg([calc_norm_radio_dc(env) for env in envs]) #quanto rimane accesa la radio
+    norm_disc = (avg_disc - 1) / (size - 1) #average discovery rate normalizzato
+    cumul = norm_disc / norm_rdc #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
     to_draw.append((norm_rdc, cumul, etq, norm_disc))
   to_draw.sort(key=lambda x: x[1])
   to_draw.reverse()

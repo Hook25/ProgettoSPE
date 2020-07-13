@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import csv
+import numpy as np
 
 norm_rdc = []
 cumul = []
 etq = []
 disc_norm = []
+recv_off_duration = []
 
 if __name__ == "__main__":
     with open('data.csv','r') as csvfile:
@@ -13,12 +15,34 @@ if __name__ == "__main__":
             norm_rdc.append(float(row[0]))
             cumul.append(float(row[1]))
             etq.append((int(row[2]), int(row[3])))
+            recv_off_duration.append(int(row[3]))
             disc_norm.append(float(row[4]))
 
-    x_axis = [i for i in range(len(norm_rdc))]
-    plt.plot(x_axis, norm_rdc, label = "norm rdc")
-    plt.plot(x_axis, cumul, label = "cumul")
-    plt.plot(x_axis, disc_norm, label = "disc norm")
-    plt.legend()
-    plt.title("Plot of simulation results")
+    #Normalize Cumul metric
+    norm = np.linalg.norm(cumul)
+    normal_cumul = cumul/norm
+
+    #Sorting cumul and recv_off
+    idx = np.argsort(recv_off_duration)
+    recv_off_duration = np.array(recv_off_duration)[idx]
+    normal_cumul = np.array(normal_cumul)[idx]
+
+    #First plot - cumulative metric over receiver off duration
+    plt.plot(recv_off_duration, normal_cumul)
+    plt.title("cumulative metric over receiver off duration")
+    plt.ylabel("Normalized cumulative metrics")
+    plt.xlabel("Receiver off duration")
     plt.show()
+
+    #Sorting radio duty cycle and disc rate
+    idx   = np.argsort(disc_norm)
+    disc_norm = np.array(disc_norm)[idx]
+    norm_rdc = np.array(norm_rdc)[idx]
+
+    #Second plot - Radio duty cycle over discovery rate
+    plt.title("Radio duty cycle over Discovery rate")
+    plt.ylabel("Radio Duty Cycle normalized")
+    plt.xlabel("Discovery rate normalized")
+    plt.plot(disc_norm, norm_rdc)
+    plt.show()
+
