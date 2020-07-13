@@ -86,10 +86,10 @@ def main():
     Param("prop_time", identity, (0.00013, )),
     Param("startup_time", np.random.RandomState(seed).uniform, (0,400))
     ]) 
-    for seed in range(30) #numero simulazioni
+    for seed in range(40) #numero simulazioni
   ]
   params = send_spacing_domain(const_params, (1, 200, 10)) #crea per ogni parametro una simulazione
-  params = recv_off_domain(params, (50, 300, 20)) 
+  params = recv_off_domain(params, (1, 300, 10)) 
   print("To do: ", len(params))
   results = defaultdict(list)
   for i, env in enumerate(p.imap_unordered(simulate, params)):
@@ -98,13 +98,29 @@ def main():
       print("{}/{}".format(i, len(params)))
 
   to_draw = []
-
+  xs, ys, zs = [], [], []
+  import matplotlib.pyplot as plt
+  from mpl_toolkits.mplot3d import Axes3D
+  
+  fig = plt.figure()
+  ax = fig.add_subplot(111, projection='3d')
+  
   for etq, envs in results.items():
     avg_disc = avg([calc_avg_disc(env) for env in envs]) #average discovery rate
     norm_rdc = avg([calc_norm_radio_dc(env) for env in envs]) #quanto rimane accesa la radio
     norm_disc = (avg_disc - 1) / (size - 1) #average discovery rate normalizzato
-    cumul = norm_disc / norm_rdc #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
+    cumul = (norm_disc + norm_rdc)/2 #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
     to_draw.append((norm_rdc, cumul, etq, norm_disc))
+    xs.append(etq[0])
+    ys.append(etq[1])
+    zs.append(norm_disc)
+    
+  ax.set_xlabel('Send Spacing')
+  ax.set_ylabel('Recv Duration')
+  ax.set_zlabel('Cumul avg(dr, rdc)')
+  ax.scatter(np.array(xs), np.array(ys), np.array(zs))
+  plt.show()
+  
   to_draw.sort(key=lambda x: x[1])
   to_draw.reverse()
   to_draw = to_draw[:50]
