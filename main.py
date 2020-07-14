@@ -49,12 +49,12 @@ def send_spacing_domain(params, domain):
   ]  
 
 def recv_off_domain(params, domain):
-  TOT_RECV_W = 600
+  TOT_RECV_TIME = 600
   return [(
     size, 
     param_l + [
-      Param("recv_duration", identity, (TOT_RECV_W - x_dom, )),
-      Param("off_duration", identity, (TOT_RECV_W - (TOT_RECV_W - x_dom), ))
+      Param("recv_duration", identity, (TOT_RECV_TIME - x_dom, )),
+      Param("off_duration", identity, (TOT_RECV_TIME - (TOT_RECV_TIME - x_dom), ))
     ])
     for x_dom in range(*domain)
     for size, param_l in params
@@ -82,7 +82,7 @@ def main():
   size = 5
   p = Pool()
   const_params = [(size, [
-    Param("send_duration", identity, (300, )),
+    Param("send_duration", np.random.RandomState(seed).normal, (300, 2)),
     Param("prop_time", identity, (0.00013, )),
     Param("startup_time", np.random.RandomState(seed).uniform, (0,400))
     ]) 
@@ -109,7 +109,7 @@ def main():
     avg_disc = avg([calc_avg_disc(env) for env in envs]) #average discovery rate
     norm_rdc = avg([calc_norm_radio_dc(env) for env in envs]) #quanto rimane accesa la radio
     norm_disc = (avg_disc - 1) / (size - 1) #average discovery rate normalizzato
-    cumul = (norm_disc + norm_rdc)/2 #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
+    cumul = (norm_disc + (1-norm_rdc))/2 #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
     to_draw.append((norm_rdc, cumul, etq, norm_disc))
     xs.append(etq[0])
     ys.append(etq[1])
