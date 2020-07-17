@@ -7,6 +7,7 @@ cumul = []
 etq = []
 disc_norm = []
 recv_off_duration = []
+send_spacing = []
 
 if __name__ == "__main__":
     with open('data.csv','r') as csvfile:
@@ -16,6 +17,7 @@ if __name__ == "__main__":
             cumul.append(float(row[1]))
             etq.append((int(row[2]), int(row[3])))
             recv_off_duration.append(int(row[3]))
+            send_spacing.append(int(row[2]))
             disc_norm.append(float(row[4]))
 
     #Normalize Cumul metric
@@ -44,5 +46,14 @@ if __name__ == "__main__":
     plt.ylabel("Radio Duty Cycle normalized")
     plt.xlabel("Discovery rate normalized")
     plt.plot(disc_norm, norm_rdc)
+    plt.show()
+
+    xs, ys, zs = [], [], []
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('Send Spacing')
+    ax.set_ylabel('Recv Duration')
+    ax.set_zlabel('Discovery rate')
+    ax.scatter(send_spacing, recv_off_duration, disc_norm)
     plt.show()
 

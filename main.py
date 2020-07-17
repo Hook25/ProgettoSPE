@@ -4,6 +4,9 @@ import numpy as np
 from multiprocessing import Pool
 from collections import defaultdict
 from matplotlib import pyplot as plt
+import scipy.stats as st
+from math import sqrt
+from math import ceil, floor
 
 def build_network(size):
   return [Node(i, (i,i)) for i in range(size)]
@@ -62,21 +65,33 @@ def recv_off_domain(params, domain):
 
 def save_data_to_csv(data):
   #Saving data to a csv file
-  data_file = open('data.csv','a')
-  for norm_rdc, cumul, etq, disc_norm in data: 
-    print(norm_rdc, cumul, etq, disc_norm)
-    data_file.write(str(norm_rdc))
-    data_file.write(",")
-    data_file.write(str(cumul))
-    data_file.write(",")
-    data_file.write(str(etq[0]))
-    data_file.write(",")
-    data_file.write(str(etq[1]))
-    data_file.write(",")
-    data_file.write(str(disc_norm))
+  data_file = open('metrics_with_conf_int.csv','a')
+  for sample in data: 
+    for metric in sample:
+      data_file.write(str(metric))
+      data_file.write(",")
     data_file.write("\n")
   data_file.close()
-  
+
+def _sd(arr):
+  mean = np.mean(arr)
+  arr = arr - mean
+  arr = arr ** 2
+  tmp = sum(arr)
+  return sqrt(tmp / (len(arr)))
+
+def _sem(arr):
+  return _sd(arr) / sqrt(len(arr))
+
+def mean_confidence_interval_man(data, confidence=0.95):
+  a = 1.0 * np.array(data)
+  n = len(a)
+  m, se = np.mean(a), _sem(a)
+  lb_ub = np.array(st.t.interval(confidence, len(data) - 1))
+  lb_ub *= se
+  lb_ub += m
+  lb, ub = lb_ub
+  return m, lb, ub
 
 def main():
   size = 5
@@ -107,10 +122,28 @@ def main():
   
   for etq, envs in results.items():
     avg_disc = avg([calc_avg_disc(env) for env in envs]) #average discovery rate
+    mean, lower_bound_disc, upper_bound_disc = mean_confidence_interval_man([calc_avg_disc(env) for env in envs])
+    #print("Avg discovery rate: ", avg_disc, mean, lower_bound_disc, upper_bound_disc)
+
     norm_rdc = avg([calc_norm_radio_dc(env) for env in envs]) #quanto rimane accesa la radio
+    mean, lower_bound_rdc, upper_bound_rdc = mean_confidence_interval_man([calc_norm_radio_dc(env) for env in envs])
+    #print("Norm rdc: ", norm_rdc, mean, lower_bound_rdc, upper_bound_rdc)
+
+    avg_receiver_off = avg([env.get_param("off_duration") for env in envs]) #quanto rimane accesa la radio
+    mean, lower_bound_receiver_off, upper_bound_receiver_off = mean_confidence_interval_man([env.get_param("off_duration") for env in envs])
+    #print("Avg receiver off: ", avg_receiver_off, mean, lower_bound_receiver_off, upper_bound_receiver_off)
+
     norm_disc = (avg_disc - 1) / (size - 1) #average discovery rate normalizzato
+    lower_bound_norm_disc = (lower_bound_disc - 1) / (size - 1)
+    upper_bound_norm_disc = (upper_bound_disc - 1) / (size - 1)
+    #print("Norm disc rate: ", norm_disc, lower_bound_norm_disc, upper_bound_norm_disc)
+
     cumul = (norm_disc + norm_rdc)/2 #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
-    to_draw.append((norm_rdc, cumul, etq, norm_disc))
+    lower_cumul = (lower_bound_norm_disc + lower_bound_rdc)/2
+    upper_cumul = (upper_bound_norm_disc + upper_bound_rdc)/2
+    #print("Cumul: ", cumul, lower_cumul, upper_cumul)
+
+    to_draw.append((norm_rdc, lower_bound_rdc, upper_bound_rdc, cumul, lower_cumul, upper_cumul, norm_disc, lower_bound_norm_disc, upper_bound_norm_disc, avg_receiver_off, etq))
     xs.append(etq[0])
     ys.append(etq[1])
     zs.append(norm_disc)
