@@ -2,18 +2,21 @@ from environment import Environment, Node
 from simul_params import Param, SimulParamsManager, identity
 import numpy as np
 from multiprocessing import Pool
+import scipy.stats as st
+from math import sqrt
+from math import ceil, floor
 
 def avg(x): return sum(x) / len(x)
 
 def build_network(size):
   return [Node(i, (i,i)) for i in range(size)]
 
-def simulate(size, seed):
+def simulate(size, seed=1):
   nodes = build_network(size)
   params = [
-    Param("recv_duration", identity, (50, )), 
-    Param("off_duration",  identity, (900, )),
-    Param("send_duration", identity, (50, )),
+    Param("recv_duration", identity, (333, )), 
+    Param("off_duration",  identity, (333, )),
+    Param("send_duration", identity, (333, )),
     Param("send_spacing", identity, (1, )),
     Param("prop_time", identity, (0.00013, )),
     Param("startup_time", np.random.RandomState(seed).uniform, (0,400))
@@ -52,14 +55,46 @@ def save_data_to_csv(data):
   data_file.write("\n")
   data_file.close()
 
+def _sd(arr):
+  mean = np.mean(arr)
+  arr = arr - mean
+  arr = arr ** 2
+  tmp = sum(arr)
+  return sqrt(tmp / (len(arr)))
+
+def _sem(arr):
+  return _sd(arr) / sqrt(len(arr))
+
+def mean_confidence_interval_man(data, confidence=0.95):
+  a = 1.0 * np.array(data)
+  n = len(a)
+  m, se = np.mean(a), _sem(a)
+  lb_ub = np.array(st.t.interval(confidence, len(data) - 1))
+  lb_ub *= se
+  lb_ub += m
+  lb, ub = lb_ub
+  return m, lb, ub
+
 def main():
-  size = 3
+  size = 5
   total_simulations = 10
-  envs = [simulate(size, i) for i in range(total_simulations)]
+  p = Pool()
+  #envs = [simulate(size, i) for i in range(total_simulations)]
+  envs = p.map(simulate, [size for _ in range(total_simulations)])
   avg_disc = avg([calc_avg_disc(env) for env in envs]) #average discovery rate
+  mean, lower_bound_disc, upper_bound_disc = mean_confidence_interval_man([calc_avg_disc(env) for env in envs])
+
   norm_rdc = avg([calc_norm_radio_dc(env) for env in envs]) #quanto rimane accesa la radio
+  mean, lower_bound_rdc, upper_bound_rdc = mean_confidence_interval_man([calc_norm_radio_dc(env) for env in envs])
+
   norm_disc = (avg_disc - 1) / (size - 1) #average discovery rate normalizzato
-  cumul = (norm_disc + norm_rdc)/2 #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
+  lower_bound_norm_disc = (lower_bound_disc - 1) / (size - 1)
+  upper_bound_norm_disc = (upper_bound_disc - 1) / (size - 1)
+
+  cumul = (norm_disc + (1-norm_rdc))/2 #quanti nodi si scoprono per Watt nel sistema, trovare un modo per normalizzarlo
+  lower_cumul = (lower_bound_norm_disc + (1 - lower_bound_rdc))/2
+  upper_cumul = (upper_bound_norm_disc + (1 - upper_bound_rdc))/2
+
   print("Average discovery rate over ", size, " nodes: ", avg_disc)
   print("Normalized radio duty cycle: ", norm_rdc)
   print("Normalized discovery rate over ", size, " nodes: ", norm_disc)
@@ -70,9 +105,17 @@ def main():
     envs[0].get_param("send_duration"),
     envs[0].get_param("send_spacing"),
     avg_disc,
+    lower_bound_disc,
+    upper_bound_disc,
     norm_disc,
+    lower_bound_norm_disc,
+    upper_bound_norm_disc,
     norm_rdc,
+    lower_bound_rdc,
+    upper_bound_rdc,
     cumul,
+    lower_cumul,
+    upper_cumul,
     size
   ])
 

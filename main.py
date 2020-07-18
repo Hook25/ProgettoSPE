@@ -145,7 +145,6 @@ def main():
 
     to_draw.append((norm_rdc, lower_bound_rdc, upper_bound_rdc, cumul, lower_cumul, upper_cumul, norm_disc, lower_bound_norm_disc, upper_bound_norm_disc, avg_receiver_off, etq))
 
-    to_draw.append((norm_rdc, cumul, etq, norm_disc))
     xs.append(etq[0])
     ys.append(etq[1])
     zs.append(norm_disc)
