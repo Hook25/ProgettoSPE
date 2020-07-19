@@ -2,7 +2,7 @@ from heapq import heappush, heappop
 from events import *
 import numpy as np
 
-SIMULATION_END = 1 * 60 * 1000 
+SIMULATION_END = 2 * 1000 
 
 class Node:
   MODE_SEND = "Mode send"
@@ -47,6 +47,8 @@ class Environment:
       last_evt = self.pop()
   def get_param(self, name):
     return self.params.get_value(name)
+  def cget_param(self, name):
+    return self.params.cget_value(name) 
   def evolve(self, name):
     self.params.evolve(name)
 

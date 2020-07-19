@@ -86,7 +86,6 @@ class StartEvent(Event):
   _kind = "StartEvent"
   def dst_get_value(self):
     val = self.master.get_param("startup_time")
-    #print(val)
     return val
   def run(self):
     ModeSendEvent(self.id, self.ts, self.master).plan() 

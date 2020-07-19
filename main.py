@@ -29,7 +29,7 @@ def calc_avg_disc(env):
   return avg(disc)
 
 def calc_norm_radio_dc(env):
-  time_to_send = 0.01
+  time_to_send = 1
   recv_duration = env.get_param("recv_duration")
   off_duration = env.get_param("off_duration")
   send_duration = env.get_param("send_duration")
@@ -48,6 +48,11 @@ def send_spacing_domain(params, domain):
     for size, param_l in params
   ]  
 
+def dd_list() : return defaultdict(list)
+def ddd_list() : return defaultdict(dd_list)
+def dddd_list(): return defaultdict(ddd_list)
+def name_size_cparam_vparam_envs(): return defaultdict(dddd_list)
+
 def recv_off_domain(params, domain):
   TOT_RECV_TIME = 600
   return [(
@@ -60,43 +65,33 @@ def recv_off_domain(params, domain):
     for size, param_l in params
   ]
 
-def save_data_to_csv(data):
-  #Saving data to a csv file
-  data_file = open('data.csv','a')
-  for norm_rdc, cumul, etq, disc_norm in data: 
-    print(norm_rdc, cumul, etq, disc_norm)
-    data_file.write(str(norm_rdc))
-    data_file.write(",")
-    data_file.write(str(cumul))
-    data_file.write(",")
-    data_file.write(str(etq[0]))
-    data_file.write(",")
-    data_file.write(str(etq[1]))
-    data_file.write(",")
-    data_file.write(str(disc_norm))
-    data_file.write("\n")
-  data_file.close()
-  
-
 def main():
-  size = 5
   p = Pool()
-  const_params = [(size, [
+  size = [5,25,50] * 60
+  const_params = [(size[seed], [
     Param("send_duration", np.random.RandomState(seed).normal, (300, 2)),
-    Param("prop_time", identity, (0.00013, )),
-    Param("startup_time", np.random.RandomState(seed).uniform, (0,400))
+    Param("prop_time", identity, (0.0013, )), #removed 1 0, now all times are ms / 10
+    Param("startup_time", np.random.RandomState(seed).uniform, (0,1000))
     ]) 
-    for seed in range(40) #numero simulazioni
+    for seed in range(len(size)) #numero simulazioni
   ]
-  params = send_spacing_domain(const_params, (1, 200, 10)) #crea per ogni parametro una simulazione
-  params = recv_off_domain(params, (1, 300, 10)) 
+  params = send_spacing_domain(const_params, (1, 50, 9)) #crea per ogni parametro una simulazione
+  params = recv_off_domain(params, (1, 300, 40)) 
   print("To do: ", len(params))
-  results = defaultdict(list)
+  
+  import pickle
+  results = name_size_cparam_vparam_envs()
+  
   for i, env in enumerate(p.imap_unordered(simulate, params)):
-    results[(env.get_param("send_spacing"), env.get_param("recv_duration"))].append(env)
+    results["send_spacing"][len(env.nodes)][env.cget_param("send_spacing")][env.cget_param("recv_duration")].append(env)
+    results["recv_duration"][len(env.nodes)][env.cget_param("recv_duration")][env.cget_param("send_spacing")].append(env)
     if i % 1000 == 0:
       print("{}/{}".format(i, len(params)))
 
+  with open("save.pkl", "wb+") as f:
+    pickle.dump(results, f)
+  return
+  
   to_draw = []
   xs, ys, zs = [], [], []
   import matplotlib.pyplot as plt
@@ -120,10 +115,6 @@ def main():
   ax.set_zlabel('Cumul avg(dr, rdc)')
   ax.scatter(np.array(xs), np.array(ys), np.array(zs))
   plt.show()
-  
-  to_draw.sort(key=lambda x: x[1])
-  to_draw.reverse()
-  to_draw = to_draw[:50]
   
   save_data_to_csv(to_draw)
 
