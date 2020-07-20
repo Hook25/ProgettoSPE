@@ -67,7 +67,7 @@ def recv_off_domain(params, domain):
 
 def main():
   p = Pool()
-  size = [5,25,50] * 60
+  size = [5,25,50] * 140
   const_params = [(size[seed], [
     Param("send_duration", np.random.RandomState(seed).normal, (300, 2)),
     Param("prop_time", identity, (0.0013, )), #removed 1 0, now all times are ms / 10
